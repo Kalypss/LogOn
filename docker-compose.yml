@@ -1,0 +1,153 @@
+# Configuration Docker Compose pour LogOn Password Manager
+# Architecture multi-services sécurisée avec séparation des réseaux
+
+version: '3.8'
+
+services:
+  # Frontend Nuxt.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: ${NODE_ENV:-development}
+    container_name: logon-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost:3001/api}
+      - NUXT_PUBLIC_APP_NAME=${NUXT_PUBLIC_APP_NAME:-LogOn}
+    networks:
+      - frontend-network
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app:delegated
+      - /app/node_modules
+      - /app/.nuxt
+    command: npm run dev
+
+  # Backend Node.js/Express
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: ${NODE_ENV:-development}
+    container_name: logon-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-5}
+      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
+    networks:
+      - frontend-network
+      - backend-network
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./backend:/app:delegated
+      - /app/node_modules
+      - ./logs:/app/logs
+    command: npm run dev
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: logon-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-logon}
+      - POSTGRES_USER=${POSTGRES_USER:-logon}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    networks:
+      - backend-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+      - ./database/backups:/backups
+    ports:
+      - "5432:5432" # Port exposé uniquement en développement
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+
+  # Redis Cache & Sessions
+  redis:
+    image: redis:7-alpine
+    container_name: logon-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    networks:
+      - backend-network
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379" # Port exposé uniquement en développement
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    image: nginx:alpine
+    container_name: logon-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - frontend-network
+    depends_on:
+      - frontend
+      - backend
+    profiles:
+      - production
+
+# Réseaux isolés pour la sécurité
+networks:
+  frontend-network:
+    driver: bridge
+    name: logon-frontend
+  backend-network:
+    driver: bridge
+    name: logon-backend
+    internal: true # Réseau interne, pas d'accès Internet direct
+
+# Volumes persistants
+volumes:
+  postgres_data:
+    driver: local
+    name: logon-postgres-data
+  redis_data:
+    driver: local
+    name: logon-redis-data

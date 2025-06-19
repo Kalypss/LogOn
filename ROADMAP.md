@@ -24,16 +24,16 @@
 
 ### 1.1 Configuration de l'environnement de développement
 - [x] Initialisation du repository Git
-- [ ] Configuration Docker et Docker Compose
-- [ ] Structure des dossiers et fichiers de base
-- [ ] Scripts d'installation automatisée
-- [ ] Variables d'environnement et secrets
+- [x] Configuration Docker et Docker Compose
+- [x] Structure des dossiers et fichiers de base
+- [x] Scripts d'installation automatisée
+- [x] Variables d'environnement et secrets
 
 ### 1.2 Configuration de la base de données
-- [ ] Schémas PostgreSQL (users, groups, entries, sessions)
-- [ ] Migrations et seeds
-- [ ] Configuration Redis pour sessions et cache
-- [ ] Scripts de sauvegarde sécurisée
+- [x] Schémas PostgreSQL (users, groups, entries, sessions)
+- [x] Migrations et seeds
+- [x] Configuration Redis pour sessions et cache
+- [x] Scripts de sauvegarde sécurisée
 
 ### 1.3 Infrastructure de sécurité de base
 - [ ] Middleware de rate limiting

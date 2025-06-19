@@ -3,44 +3,44 @@
 ## 🚀 Phase 1 : Infrastructure et Base
 
 ### Configuration de l'environnement
-- [ ] **Docker & Docker Compose**
-  - [ ] Créer `docker-compose.yml` avec services (frontend, backend, db, redis)
-  - [ ] Dockerfiles pour chaque service
-  - [ ] Configuration des réseaux et volumes
-  - [ ] Variables d'environnement sécurisées
+- [x] **Docker & Docker Compose**
+  - [x] Créer `docker-compose.yml` avec services (frontend, backend, db, redis)
+  - [x] Dockerfiles pour chaque service
+  - [x] Configuration des réseaux et volumes
+  - [x] Variables d'environnement sécurisées
 
-- [ ] **Structure du projet**
-  - [ ] Créer structure backend avec dossiers (controllers, models, middleware, services, utils)
-  - [ ] Créer structure frontend avec dossiers (components, pages, composables, utils)
-  - [ ] Fichiers de configuration TypeScript
-  - [ ] Fichiers de configuration ESLint/Prettier
+- [x] **Structure du projet**
+  - [x] Créer structure backend avec dossiers (controllers, models, middleware, services, utils)
+  - [x] Créer structure frontend avec dossiers (components, pages, composables, utils)
+  - [x] Fichiers de configuration TypeScript
+  - [x] Fichiers de configuration ESLint/Prettier
 
-- [ ] **Scripts d'installation**
-  - [ ] Script `install.sh` avec détection prérequis
-  - [ ] Installation automatique Docker si absent
-  - [ ] Configuration service systemd pour démarrage automatique
-  - [ ] Génération automatique des secrets (.env)
+- [x] **Scripts d'installation**
+  - [x] Script `install.sh` avec détection prérequis
+  - [x] Installation automatique Docker si absent
+  - [x] Configuration service systemd pour démarrage automatique
+  - [x] Génération automatique des secrets (.env)
 
 ### Base de données
-- [ ] **Schémas PostgreSQL**
-  - [ ] Table `users` avec colonnes sécurisées
-  - [ ] Table `groups` pour système de groupes
-  - [ ] Table `group_members` avec rôles
-  - [ ] Table `entries` pour mots de passe chiffrés
-  - [ ] Table `entry_permissions` pour permissions granulaires
-  - [ ] Table `sessions` pour backup des sessions Redis
+- [x] **Schémas PostgreSQL**
+  - [x] Table `users` avec colonnes sécurisées
+  - [x] Table `groups` pour système de groupes
+  - [x] Table `group_members` avec rôles
+  - [x] Table `entries` pour mots de passe chiffrés
+  - [x] Table `entry_permissions` pour permissions granulaires
+  - [x] Table `sessions` pour backup des sessions Redis
 
-- [ ] **Migrations et seeds**
-  - [ ] Scripts de migration avec Flyway ou équivalent
-  - [ ] Seeds pour données de test
-  - [ ] Scripts de rollback
-  - [ ] Validation des contraintes de sécurité
+- [x] **Migrations et seeds**
+  - [x] Scripts de migration avec Flyway ou équivalent
+  - [x] Seeds pour données de test
+  - [x] Scripts de rollback
+  - [x] Validation des contraintes de sécurité
 
-- [ ] **Configuration Redis**
-  - [ ] Configuration pour sessions utilisateur
-  - [ ] Configuration pour rate limiting
-  - [ ] Configuration pour cache temporaire
-  - [ ] Système d'expiration automatique
+- [x] **Configuration Redis**
+  - [x] Configuration pour sessions utilisateur
+  - [x] Configuration pour rate limiting
+  - [x] Configuration pour cache temporaire
+  - [x] Système d'expiration automatique
 
 ### Sécurité de base
 - [ ] **Middleware de sécurité**

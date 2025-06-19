@@ -70,3 +70,4 @@ applyTo: '**'
 - Toujours penser à la sécurité accrue des données et à la protection de la vie privée
 - Ne pas hésiter à demander des précisions sur les besoins spécifiques du projet
 - Toujours penser que le projet est open source, ainsi les variables d'environnement doivent être définies dans un fichier `.env` et non dans le code source
+- Je veux qu'à chaque phases d'un projet, tu crées un fichier testPhaseX.sh dans le dossier tests de la racine du projet.
