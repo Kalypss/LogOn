@@ -252,7 +252,7 @@ COMMENT ON TABLE group_members IS 'Membres des groupes avec clés de groupe chif
 COMMENT ON TABLE entries IS 'Entrées chiffrées (mots de passe, notes, cartes)';
 COMMENT ON TABLE entry_permissions IS 'Permissions granulaires par entrée et utilisateur';
 COMMENT ON TABLE sessions IS 'Sessions utilisateur pour backup Redis';
-COMMENT ON TABLE audit_logs IS 'Logs d\'audit pour le monitoring de sécurité';
+COMMENT ON TABLE audit_logs IS 'Logs d''audit pour le monitoring de sécurité';
 
 COMMENT ON COLUMN users.auth_hash IS 'Hash Argon2 de la clé d''authentification dérivée côté client';
 COMMENT ON COLUMN users.salt IS 'Sel unique de 32 bytes pour la dérivation de clés';

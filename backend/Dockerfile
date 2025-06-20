@@ -29,7 +29,7 @@ FROM base AS development
 ENV NODE_ENV=development
 
 # Installation de toutes les dépendances (dev incluses)
-RUN npm ci --include=dev
+RUN npm install
 
 # Copie du code source
 COPY . .
@@ -45,7 +45,7 @@ FROM base AS build
 ENV NODE_ENV=production
 
 # Installation des dépendances de production
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # Copie du code source
 COPY . .

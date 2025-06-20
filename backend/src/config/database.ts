@@ -23,17 +23,46 @@ class DatabaseManager {
   private isConnected: boolean = false;
 
   constructor() {
-    const config: DatabaseConfig = {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      database: process.env.DB_NAME || 'logon',
-      user: process.env.DB_USER || 'logon',
-      password: process.env.DB_PASSWORD || '',
-      ssl: process.env.NODE_ENV === 'production',
-      max: 20, // Maximum de connexions dans le pool
-      idleTimeoutMillis: 30000, // Timeout d'inactivité
-      connectionTimeoutMillis: 10000, // Timeout de connexion
-    };
+    // Gestion de la configuration avec DATABASE_URL ou variables séparées
+    let config: DatabaseConfig;
+    
+    if (process.env.DATABASE_URL) {
+      // Parse de l'URL de connexion PostgreSQL
+      const url = new URL(process.env.DATABASE_URL);
+      config = {
+        host: url.hostname,
+        port: parseInt(url.port) || 5432,
+        database: url.pathname.substring(1),
+        user: url.username,
+        password: url.password,
+        ssl: process.env.NODE_ENV === 'production',
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      };
+      logger.info('🔗 Configuration DB via DATABASE_URL');
+    } else {
+      // Configuration via variables d'environnement séparées
+      config = {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        database: process.env.DB_NAME || 'logon',
+        user: process.env.DB_USER || 'logon',
+        password: process.env.DB_PASSWORD || '',
+        ssl: process.env.NODE_ENV === 'production',
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      };
+      logger.info('🔗 Configuration DB via variables séparées');
+    }
+    
+    logger.info(`📊 Configuration base de données:`);
+    logger.info(`   - Host: ${config.host}`);
+    logger.info(`   - Port: ${config.port}`);
+    logger.info(`   - Database: ${config.database}`);
+    logger.info(`   - User: ${config.user}`);
+    logger.info(`   - SSL: ${config.ssl}`);
 
     this.pool = new Pool(config);
     
@@ -56,16 +85,38 @@ class DatabaseManager {
    */
   async connect(): Promise<void> {
     try {
-      // Test de connexion
-      const client = await this.pool.connect();
-      await client.query('SELECT NOW()');
+      logger.info('🔌 Tentative de connexion à la base de données...');
+      
+      // Test de connexion avec timeout
+      const client = await Promise.race([
+        this.pool.connect(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout de connexion')), 10000)
+        )
+      ]) as PoolClient;
+      
+      logger.info('✅ Client de connexion obtenu, test de requête...');
+      
+      const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
+      logger.info('📊 Base de données connectée:', {
+        timestamp: result.rows[0].current_time,
+        version: result.rows[0].pg_version.split(' ')[0]
+      });
+      
       client.release();
       
       this.isConnected = true;
-      logger.info('✅ Connexion à la base de données établie');
+      logger.info('✅ Connexion à la base de données établie avec succès');
     } catch (error) {
       logger.error('❌ Erreur de connexion à la base de données:', error);
-      throw new Error('Impossible de se connecter à la base de données');
+      logger.error('🔍 Détails de l\'erreur:', {
+        message: error instanceof Error ? error.message : 'Erreur inconnue',
+        code: (error as any)?.code,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        database: process.env.DB_NAME
+      });
+      throw new Error(`Impossible de se connecter à la base de données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     }
   }
 

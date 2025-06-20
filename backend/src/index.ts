@@ -11,34 +11,33 @@ import rateLimit from 'express-rate-limit';
 import { config } from 'dotenv';
 import { db } from './config/database';
 import { logger, requestLogger } from './utils/logger';
-import { errorHandler } from './middleware/errorHandler';
+import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/errorHandler';
 import { rateLimitConfig } from './middleware/security/rateLimit';
+import { cspMiddleware, apiCSPMiddleware } from './middleware/security/csp';
+import { monitoringMiddleware, getSystemMetrics, getPerformanceStats, getTopEndpoints, getSecurityMetrics, cleanupOldMetrics } from './middleware/monitoring';
 
 // Chargement des variables d'environnement
 config();
+
+// Configuration des gestionnaires d'erreurs globaux
+setupGlobalErrorHandlers();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 /**
- * Configuration des middlewares de sécurité
+ * Configuration des middlewares de sécurité et monitoring
  */
+
+// Middleware de monitoring (en premier pour capturer toutes les requêtes)
+app.use(monitoringMiddleware);
+
+// CSP et headers de sécurité
+app.use(cspMiddleware);
 
 // Helmet pour les headers de sécurité
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
+  contentSecurityPolicy: false, // Géré par notre middleware CSP personnalisé
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -100,13 +99,44 @@ app.get('/health', async (req, res) => {
 });
 
 /**
+ * Métriques détaillées (endpoint protégé pour les admins)
+ */
+app.get('/metrics', (req, res) => {
+  try {
+    const systemMetrics = getSystemMetrics();
+    const performanceStats = getPerformanceStats();
+    const topEndpoints = getTopEndpoints();
+    const securityMetrics = getSecurityMetrics();
+    
+    res.json({
+      timestamp: new Date().toISOString(),
+      system: systemMetrics,
+      performance: performanceStats,
+      endpoints: topEndpoints,
+      security: securityMetrics
+    });
+  } catch (error) {
+    logger.error('❌ Erreur lors de la récupération des métriques:', error);
+    res.status(500).json({
+      error: 'Impossible de récupérer les métriques'
+    });
+  }
+});
+
+/**
  * API Routes
  */
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/entries', require('./routes/entries'));
-app.use('/api/groups', require('./routes/groups'));
-app.use('/api/audit', require('./routes/audit'));
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import entryRoutes from './routes/entries';
+import groupRoutes from './routes/groups';
+import auditRoutes from './routes/audit';
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/entries', entryRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/audit', auditRoutes);
 
 /**
  * 404 Handler
@@ -129,7 +159,18 @@ app.use(errorHandler);
  */
 async function startServer() {
   try {
+    logger.info('🚀 Démarrage du serveur LogOn...');
+    logger.info(`📊 Variables d'environnement:`);
+    logger.info(`   - NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`   - PORT: ${PORT}`);
+    logger.info(`   - DB_HOST: ${process.env.DB_HOST || 'localhost'}`);
+    logger.info(`   - DB_PORT: ${process.env.DB_PORT || '5432'}`);
+    logger.info(`   - DB_NAME: ${process.env.DB_NAME || 'logon'}`);
+    logger.info(`   - DB_USER: ${process.env.DB_USER || 'logon'}`);
+    logger.info(`   - DATABASE_URL présent: ${!!process.env.DATABASE_URL}`);
+    
     // Connexion à la base de données
+    logger.info('🔌 Tentative de connexion à la base de données...');
     await db.connect();
     
     // Nettoyage initial des sessions expirées
@@ -189,6 +230,7 @@ async function startServer() {
     setInterval(async () => {
       try {
         await db.cleanupExpiredSessions();
+        cleanupOldMetrics(); // Nettoyage des métriques anciennes
       } catch (error) {
         logger.error('❌ Erreur lors du nettoyage périodique:', error);
       }

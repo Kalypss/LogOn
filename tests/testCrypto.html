@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Crypto LogOn</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Test des Fonctions Cryptographiques LogOn</h1>
+    
+    <div class="test-container">
+        <h2>Informations du Navigateur</h2>
+        <div id="browser-info" class="test-result info"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Tests de Compatibilité</h2>
+        <button onclick="runAllTests()">Lancer tous les tests</button>
+        <button onclick="clearResults()">Effacer les résultats</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script type="module">
+        // Informations du navigateur
+        document.getElementById('browser-info').innerHTML = `
+            <strong>Navigateur:</strong> ${navigator.userAgent}<br>
+            <strong>Web Crypto API:</strong> ${window.crypto ? '✅ Disponible' : '❌ Non disponible'}<br>
+            <strong>crypto.subtle:</strong> ${window.crypto?.subtle ? '✅ Disponible' : '❌ Non disponible'}<br>
+            <strong>crypto.getRandomValues:</strong> ${window.crypto?.getRandomValues ? '✅ Disponible' : '❌ Non disponible'}
+        `;
+
+        // Fonctions cryptographiques simplifiées pour le test
+        function getRandomBytes(length) {
+            if (length <= 0) {
+                throw new Error('Length must be positive')
+            }
+            
+            const bytes = new Uint8Array(length)
+            crypto.getRandomValues(bytes)
+            return bytes
+        }
+
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer)
+            let result = ''
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+            
+            for (let i = 0; i < bytes.length; i += 3) {
+                const a = bytes[i]
+                const b = bytes[i + 1] || 0
+                const c = bytes[i + 2] || 0
+                
+                const bitmap = (a << 16) | (b << 8) | c
+                
+                result += alphabet.charAt((bitmap >> 18) & 63)
+                result += alphabet.charAt((bitmap >> 12) & 63)
+                result += i + 1 < bytes.length ? alphabet.charAt((bitmap >> 6) & 63) : '='
+                result += i + 2 < bytes.length ? alphabet.charAt(bitmap & 63) : '='
+            }
+            
+            return result
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64)
+            const bytes = new Uint8Array(binaryString.length)
+            
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i)
+            }
+            
+            return bytes.buffer
+        }
+
+        async function testRandomGeneration() {
+            try {
+                const salt = getRandomBytes(32)
+                const base64Salt = arrayBufferToBase64(salt.buffer)
+                
+                if (salt.length !== 32) {
+                    throw new Error('Salt length incorrect')
+                }
+                
+                if (base64Salt.length === 0) {
+                    throw new Error('Base64 encoding failed')
+                }
+                
+                return { success: true, message: `✅ Génération aléatoire: ${base64Salt.substring(0, 20)}...` }
+            } catch (error) {
+                return { success: false, message: `❌ Génération aléatoire: ${error.message}` }
+            }
+        }
+
+        async function testPBKDF2KeyDerivation() {
+            try {
+                const password = 'test-password-123'
+                const salt = arrayBufferToBase64(getRandomBytes(32).buffer)
+                
+                // Convert password to bytes
+                const passwordBytes = new TextEncoder().encode(password)
+                const saltBytes = base64ToArrayBuffer(salt)
+              
+                // Import password as key material
+                const keyMaterial = await crypto.subtle.importKey(
+                  'raw',
+                  passwordBytes,
+                  'PBKDF2',
+                  false,
+                  ['deriveBits']
+                )
+              
+                // Derive 64 bytes of key material (32 for auth + 32 for enc)
+                const derivedBits = await crypto.subtle.deriveBits(
+                  {
+                    name: 'PBKDF2',
+                    salt: saltBytes,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                  },
+                  keyMaterial,
+                  512 // 64 bytes = 512 bits
+                )
+
+                // Split the derived bits into two 32-byte keys
+                const derivedArray = new Uint8Array(derivedBits)
+                const authKeyBytes = derivedArray.slice(0, 32)
+                const encKeyBytes = derivedArray.slice(32, 64)
+
+                const authKey = arrayBufferToBase64(authKeyBytes.buffer)
+                const encKey = arrayBufferToBase64(encKeyBytes.buffer)
+                
+                if (!authKey || !encKey) {
+                    throw new Error('Key derivation produced empty keys')
+                }
+                
+                return { 
+                    success: true, 
+                    message: `✅ Dérivation PBKDF2: Auth(${authKey.substring(0, 10)}...) Enc(${encKey.substring(0, 10)}...)` 
+                }
+            } catch (error) {
+                return { success: false, message: `❌ Dérivation PBKDF2: ${error.message}` }
+            }
+        }
+
+        async function testAESEncryption() {
+            try {
+                const plaintext = 'Hello, World! This is a test message for AES encryption.'
+                const key = getRandomBytes(32) // 256-bit key
+                const iv = getRandomBytes(16) // 128-bit IV
+                
+                // Import encryption key
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    key,
+                    'AES-GCM',
+                    false,
+                    ['encrypt', 'decrypt']
+                )
+                
+                // Encrypt
+                const encrypted = await crypto.subtle.encrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv
+                    },
+                    cryptoKey,
+                    new TextEncoder().encode(plaintext)
+                )
+                
+                // Decrypt
+                const decrypted = await crypto.subtle.decrypt(
+                    {
+                        name: 'AES-GCM',
+                        iv: iv
+                    },
+                    cryptoKey,
+                    encrypted
+                )
+                
+                const decryptedText = new TextDecoder().decode(decrypted)
+                
+                if (decryptedText !== plaintext) {
+                    throw new Error('Decryption did not match original text')
+                }
+                
+                return { 
+                    success: true, 
+                    message: `✅ Chiffrement AES-GCM: ${plaintext.substring(0, 20)}... → Chiffré et déchiffré avec succès` 
+                }
+            } catch (error) {
+                return { success: false, message: `❌ Chiffrement AES-GCM: ${error.message}` }
+            }
+        }
+
+        async function testSHA256Hashing() {
+            try {
+                const data = 'Test data for SHA-256 hashing'
+                const dataBytes = new TextEncoder().encode(data)
+                
+                const hashBuffer = await crypto.subtle.digest('SHA-256', dataBytes)
+                const hashBase64 = arrayBufferToBase64(hashBuffer)
+                
+                if (!hashBase64 || hashBase64.length === 0) {
+                    throw new Error('Hash generation failed')
+                }
+                
+                return { 
+                    success: true, 
+                    message: `✅ Hachage SHA-256: ${data} → ${hashBase64.substring(0, 20)}...` 
+                }
+            } catch (error) {
+                return { success: false, message: `❌ Hachage SHA-256: ${error.message}` }
+            }
+        }
+
+        async function runAllTests() {
+            const resultsContainer = document.getElementById('test-results')
+            resultsContainer.innerHTML = '<div class="test-result info">🔄 Tests en cours...</div>'
+            
+            const tests = [
+                { name: 'Génération aléatoire', fn: testRandomGeneration },
+                { name: 'Dérivation de clés PBKDF2', fn: testPBKDF2KeyDerivation },
+                { name: 'Chiffrement AES-GCM', fn: testAESEncryption },
+                { name: 'Hachage SHA-256', fn: testSHA256Hashing }
+            ]
+            
+            let results = []
+            let allPassed = true
+            
+            for (const test of tests) {
+                try {
+                    const result = await test.fn()
+                    results.push(result)
+                    if (!result.success) allPassed = false
+                } catch (error) {
+                    results.push({ 
+                        success: false, 
+                        message: `❌ ${test.name}: Exception non gérée - ${error.message}` 
+                    })
+                    allPassed = false
+                }
+            }
+            
+            resultsContainer.innerHTML = results.map(result => 
+                `<div class="test-result ${result.success ? 'success' : 'error'}">${result.message}</div>`
+            ).join('') + 
+            `<div class="test-result ${allPassed ? 'success' : 'error'}">
+                <strong>${allPassed ? '🎉 Tous les tests sont passés!' : '⚠️ Certains tests ont échoué'}</strong>
+            </div>`
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = ''
+        }
+
+        // Exposer les fonctions pour les boutons
+        window.runAllTests = runAllTests
+        window.clearResults = clearResults
+    </script>
+</body>
+</html>

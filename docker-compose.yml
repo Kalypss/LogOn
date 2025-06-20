@@ -41,12 +41,21 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
-      - DATABASE_URL=${DATABASE_URL}
+      # Configuration base de données
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-logon}
+      - DB_USER=${POSTGRES_USER:-logon}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      # Configuration Redis
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      # Configuration JWT et Sessions
       - JWT_SECRET=${JWT_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
+      # Configuration Rate Limiting
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-5}
+      # Configuration Sécurité
       - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
     networks:
       - frontend-network
@@ -141,7 +150,6 @@ networks:
   backend-network:
     driver: bridge
     name: logon-backend
-    internal: true # Réseau interne, pas d'accès Internet direct
 
 # Volumes persistants
 volumes:
