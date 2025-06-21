@@ -41,6 +41,16 @@ export default defineNuxtConfig({
     }
   },
 
+  // Configuration du serveur de développement avec HTTPS
+  devServer: {
+    https: {
+      key: './certificates/localhost-key.pem',
+      cert: './certificates/localhost-cert.pem',
+    },
+    host: '0.0.0.0', // Permet l'accès depuis d'autres machines du réseau
+    port: 3000
+  },
+
   // Proxy configuration for API routes
   nitro: {
     devProxy: {
@@ -53,6 +63,10 @@ export default defineNuxtConfig({
 
   vite: {
     server: {
+      https: {
+        key: './certificates/localhost-key.pem',
+        cert: './certificates/localhost-cert.pem',
+      },
       hmr: {
         port: 24678
       }

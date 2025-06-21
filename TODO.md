@@ -1,45 +1,40 @@
-# ## � État Global du Projet (20 Juin 2025)
+# ## 🔐 LogOn Password Manager - TODO List
+
+## 📋 État Global du Projet (21 Juin 2025)
 
 ### ✅ **Phases Terminées**
 - **Phase 1** : Infrastructure et Base (100%)
 - **Phase 2** : Cryptographie et Authentification (100%) 
 - **Phase 3** : Système de Groupes (100%)
+- **Phase 4.1** : Infrastructure Frontend (100%)
 
-### 🎯 **Phase Actuelle**
-- **Phase 4** : Frontend Nuxt.js (0% - À démarrer)
+### 🔄 **Phase Actuelle**
+- **Phase 4** : Frontend Nuxt.js (75% - HTTPS configuré)
 
 ### 🔧 **Services Opérationnels**
 - **Backend API** : http://localhost:3001 ✅
-- **Frontend Nuxt.js** : http://localhost:3000 ✅
+- **Frontend Nuxt.js** : https://localhost:3000 ✅ (HTTPS activé)
 - **PostgreSQL** : localhost:5432 ✅
 - **Redis** : localhost:6379 ✅
 
 ### 📈 **Métriques Techniques**
 - **Architecture** : Zero-knowledge complète
-- **Sécurité** : AES-256-GCM + scrypt + TOTP
+- **Sécurité** : AES-256-GCM + scrypt + TOTP + SSL/TLS
 - **Performance** : < 200ms API response time
-- **Tests** : Scripts automatisés pour chaque phasenager - TODO List
+- **Tests** : Scripts automatisés pour chaque phase + testPhaseSSL.sh
 
-## � État Global du Projet (20 Juin 2025)
+### 🔐 **Nouveau : Configuration HTTPS**
+- **Certificats SSL** : Générés automatiquement via script
+- **Web Crypto API** : Fonctionnelle via HTTPS
+- **Accès sécurisé** : https://192.168.68.101:3000 et https://localhost:3000
 
-### ✅ **Phases Terminées**
-- **Phase 1** : Infrastructure et Base (100%)
-- **Phase 2** : Cryptographie et Authentification (100%)
-
-### 🎯 **Phase Actuelle**
-- **Phase 3** : Système de Groupes (0% - À démarrer)
-
-### 🔧 **Services Opérationnels**
-- **Backend API** : http://localhost:3001 ✅
-- **Frontend Nuxt.js** : http://localhost:3000 ✅
-- **PostgreSQL** : localhost:5432 ✅
-- **Redis** : localhost:6379 ✅
-
-### 📈 **Métriques Techniques**
-- **Architecture** : Zero-knowledge complète
-- **Sécurité** : AES-256-GCM + scrypt + TOTP
-- **Performance** : < 200ms API response time
-- **Tests** : Scripts automatisés pour chaque phase
+### 🆕 **Dernières Modifications (21 Juin 2025)**
+- **Correction erreur Web Crypto API** : Implémentation HTTPS pour Raspberry Pi
+- **Script de génération SSL** : `/scripts/generate-ssl-certs.sh`
+- **Configuration Nuxt.js** : devServer HTTPS + certificats auto-signés  
+- **Plugin crypto amélioré** : Gestion d'erreurs avec `createError`
+- **Test Phase SSL** : `/tests/testPhaseSSL.sh` validé ✅
+- **Documentation mise à jour** : ROADMAP et TODO synchronisées
 
 ---
 
@@ -226,23 +221,33 @@
 
 ---
 
-## 🌐 Phase 4 : Frontend Nuxt.js - 🎯 PROCHAINE ÉTAPE
+## 🌐 Phase 4 : Frontend Nuxt.js - 🔄 EN COURS (75%)
 
-### Configuration de base
-- [ ] **Installation Nuxt.js 3**
-  - [ ] Configuration TypeScript strict
-  - [ ] Configuration ESLint + Prettier
-  - [ ] Configuration Tailwind CSS
-  - [ ] Installation shadcn-vue v1.0.3
+### Configuration de base ✅ TERMINÉE
+- [x] **Installation Nuxt.js 3**
+  - [x] Configuration TypeScript strict
+  - [x] Configuration ESLint + Prettier
+  - [x] Configuration Tailwind CSS
+  - [x] Installation shadcn-vue v1.0.3 complète
 
-- [ ] **Routing et navigation**
-  - [ ] Pages d'authentification
-  - [ ] Pages de gestion des mots de passe
-  - [ ] Pages de gestion des groupes
-  - [ ] Middleware d'authentification
+- [x] **Configuration HTTPS et sécurité**
+  - [x] Certificats SSL auto-signés générés
+  - [x] Configuration devServer HTTPS
+  - [x] Web Crypto API fonctionnelle
+  - [x] Plugin crypto client avec gestion d'erreurs
 
-### Composants de base
-- [ ] **Composants d'authentification**
+- [x] **Routing et navigation**
+  - [x] Pages d'authentification (login, register, 2FA, recovery)
+  - [x] Pages de gestion des mots de passe (dashboard, entries)
+  - [x] Pages de gestion des groupes
+  - [x] Middleware d'authentification
+  - [x] Composables API (useAuth, useApi, useGroups, usePasswordEntries)
+
+### Composants de base 🔄 EN COURS
+- [x] **Structure des composants**
+  - [x] Composants UI shadcn-vue intégrés
+  - [x] ThemeToggle fonctionnel
+  - [x] Layout par défaut
   - [ ] Formulaire de connexion avec validation
   - [ ] Formulaire d'inscription avec génération de clés
   - [ ] Interface de récupération de compte
