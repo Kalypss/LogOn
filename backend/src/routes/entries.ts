@@ -6,8 +6,12 @@
 import { Router } from 'express';
 import { EntryController } from '../controllers/EntryController';
 import { asyncHandler } from '../middleware/errorHandler';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
+
+// Appliquer l'authentification à toutes les routes
+router.use(requireAuth);
 
 /**
  * GET /api/entries

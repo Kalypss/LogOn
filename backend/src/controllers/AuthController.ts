@@ -11,6 +11,9 @@ import { JWTService } from '../services/JWTService';
 import { TOTPService } from '../services/TOTPService';
 import { getUserId } from '../middleware/auth';
 
+// Fix pour Buffer dans l'environnement TypeScript
+declare const Buffer: any;
+
 export class AuthController {
   
   /**
@@ -129,15 +132,26 @@ export class AuthController {
         });
         return;
       }
-      
-      const user = result.rows[0];
+       const user = result.rows[0];
       
       logger.info('🔑 Sel récupéré pour utilisateur:', { 
         email: email.toLowerCase() 
       });
       
+      // Conversion sécurisée du sel depuis la base de données
+      let saltBase64: string;
+      if (Buffer.isBuffer(user.salt)) {
+        saltBase64 = user.salt.toString('base64');
+      } else if (typeof user.salt === 'string') {
+        // Si c'est déjà une string, on suppose que c'est en base64
+        saltBase64 = user.salt;
+      } else {
+        // Si c'est un objet (résultat PostgreSQL), on le convertit
+        saltBase64 = Buffer.from(user.salt).toString('base64');
+      }
+
       res.json({
-        salt: user.salt.toString('base64'),
+        salt: saltBase64,
         exists: true
       });
       

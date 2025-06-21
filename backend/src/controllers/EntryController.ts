@@ -6,7 +6,11 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../config/database';
-import { ValidationError, NotFoundError, ForbiddenError } from '../middleware/errorHandler';
+import { ValidationError, NotFoundError, ForbiddenError, AuthError } from '../middleware/errorHandler';
+import { isValidUUID, isValidEntryType, validatePagination } from '../utils/validation';
+
+// Fix pour Buffer dans l'environnement TypeScript
+declare const Buffer: any;
 
 export class EntryController {
   
@@ -15,8 +19,11 @@ export class EntryController {
    */
   static async getEntries(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = req.userId;
+      if (!userId) {
+        throw new AuthError('Utilisateur non authentifié');
+      }
+      
       const { type, search, limit = 50, offset = 0 } = req.query;
       
       let query = `
@@ -67,9 +74,17 @@ export class EntryController {
    */
   static async getEntry(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = req.userId;
+      if (!userId) {
+        throw new AuthError('Utilisateur non authentifié');
+      }
+      
       const { id } = req.params;
+      
+      // Validation de l'UUID
+      if (!isValidUUID(id)) {
+        throw new ValidationError('ID d\'entrée invalide');
+      }
       
       const result = await db.query(`
         SELECT id, title_encrypted, data_encrypted, iv, auth_tag, 
@@ -132,8 +147,11 @@ export class EntryController {
    */
   static async createEntry(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = req.userId;
+      if (!userId) {
+        throw new AuthError('Utilisateur non authentifié');
+      }
+      
       const { titleEncrypted, dataEncrypted, iv, authTag, type = 'password' } = req.body;
       
       // Validation des données requises

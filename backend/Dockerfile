@@ -29,7 +29,10 @@ FROM base AS development
 ENV NODE_ENV=development
 
 # Installation de toutes les dépendances (dev incluses)
-RUN npm install
+RUN npm install --include=dev
+
+# Installation globale des outils de développement
+RUN npm install -g tsx typescript ts-node nodemon
 
 # Copie du code source
 COPY . .
@@ -44,14 +47,17 @@ CMD ["npm", "run", "dev"]
 FROM base AS build
 ENV NODE_ENV=production
 
-# Installation des dépendances de production
-RUN npm install --only=production && npm cache clean --force
+# Installation de toutes les dépendances pour le build
+RUN npm install --include=dev
 
 # Copie du code source
 COPY . .
 
 # Compilation TypeScript
 RUN npm run build
+
+# Installation des dépendances de production uniquement
+RUN npm ci --only=production && npm cache clean --force
 
 # Stage de production
 FROM node:20-alpine AS production
