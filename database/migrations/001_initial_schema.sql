@@ -9,6 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(50), -- Nom d'utilisateur optionnel
     auth_hash VARCHAR(255) NOT NULL, -- Hash Argon2 de la clé d'authentification
     salt BYTEA NOT NULL, -- Sel unique de 32 bytes
     recovery_code_hash VARCHAR(255) NOT NULL, -- Hash du code de récupération
@@ -16,6 +17,7 @@ CREATE TABLE users (
     totp_secret VARCHAR(255), -- Secret TOTP chiffré (optionnel)
     totp_enabled BOOLEAN DEFAULT FALSE,
     key_version INTEGER DEFAULT 1, -- Version des clés pour les migrations
+    is_active BOOLEAN DEFAULT TRUE, -- Statut du compte
     last_login_at TIMESTAMP,
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMP,
@@ -25,8 +27,10 @@ CREATE TABLE users (
 
 -- Index pour optimiser les recherches
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_username ON users(username) WHERE username IS NOT NULL;
 CREATE INDEX idx_users_created_at ON users(created_at);
 CREATE INDEX idx_users_last_login ON users(last_login_at);
+CREATE INDEX idx_users_active ON users(is_active);
 
 -- Table des groupes
 CREATE TABLE groups (

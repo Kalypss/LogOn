@@ -205,22 +205,33 @@ export const setupGlobalErrorHandlers = () => {
       stack: error.stack
     });
     
-    // En production, redémarrer l'application
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
+    // Redémarrer l'application en cas d'erreur critique
+    process.exit(1);
   });
 
   // Gestion des promesses rejetées non gérées
-  process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  process.on('unhandledRejection', (reason: any) => {
     logger.error('💥 Promesse rejetée non gérée:', {
       reason: reason?.message || reason,
-      promise: promise.toString()
+      stack: reason?.stack,
+      promise: 'Promise rejected'
     });
     
-    // En production, redémarrer l'application
+    // En développement, on continue mais on log l'erreur
+    // En production, on redémarre pour éviter un état instable
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);
+    } else {
+      logger.warn('⚠️ Continuer en mode développement - corriger l\'erreur ci-dessus');
     }
   });
+
+  // Gestion des signaux de fermeture propre
+  const gracefulShutdown = (signal: string) => {
+    logger.info(`📢 Signal ${signal} reçu, arrêt gracieux...`);
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 };

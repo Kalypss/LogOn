@@ -6,8 +6,12 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
 import { asyncHandler } from '../middleware/errorHandler';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
+
+// Apply authentication middleware to all routes
+router.use(requireAuth);
 
 /**
  * GET /api/users/me

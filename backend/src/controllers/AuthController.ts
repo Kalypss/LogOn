@@ -6,7 +6,7 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../config/database';
-import { ValidationError, AuthError, ConflictError } from '../middleware/errorHandler';
+import { ValidationError, AuthError, ConflictError, AppError } from '../middleware/errorHandler';
 import { JWTService } from '../services/JWTService';
 import { TOTPService } from '../services/TOTPService';
 import { getUserId } from '../middleware/auth';
@@ -140,14 +140,25 @@ export class AuthController {
       
       // Conversion sécurisée du sel depuis la base de données
       let saltBase64: string;
-      if (Buffer.isBuffer(user.salt)) {
-        saltBase64 = user.salt.toString('base64');
-      } else if (typeof user.salt === 'string') {
-        // Si c'est déjà une string, on suppose que c'est en base64
-        saltBase64 = user.salt;
-      } else {
-        // Si c'est un objet (résultat PostgreSQL), on le convertit
-        saltBase64 = Buffer.from(user.salt).toString('base64');
+      try {
+        if (Buffer.isBuffer(user.salt)) {
+          saltBase64 = user.salt.toString('base64');
+        } else if (typeof user.salt === 'string') {
+          // Si c'est déjà une string, on suppose que c'est en base64
+          saltBase64 = user.salt;
+        } else {
+          // PostgreSQL bytea peut être retourné sous différentes formes
+          // Essayer de le convertir en Buffer
+          const saltBuffer = Buffer.from(user.salt);
+          saltBase64 = saltBuffer.toString('base64');
+        }
+      } catch (conversionError) {
+        logger.error('❌ Erreur conversion sel:', { 
+          error: conversionError,
+          saltType: typeof user.salt,
+          saltValue: user.salt
+        });
+        throw new AppError('Erreur lors de la récupération du sel', 500);
       }
 
       res.json({
@@ -166,9 +177,12 @@ export class AuthController {
    */
   static async login(req: Request, res: Response) {
     try {
-      const { identifier, authHash, twoFactorCode } = req.body;
+      const { identifier, email, authHash, twoFactorCode } = req.body;
       
-      if (!identifier || !authHash) {
+      // Support both identifier and email for backward compatibility
+      const userIdentifier = identifier || email;
+      
+      if (!userIdentifier || !authHash) {
         throw new ValidationError('Email et hash d\'authentification requis');
       }
       
@@ -178,7 +192,7 @@ export class AuthController {
                failed_login_attempts, locked_until, last_login_at
         FROM users 
         WHERE email = $1
-      `, [identifier.toLowerCase()]);
+      `, [userIdentifier.toLowerCase()]);
       
       if (result.rows.length === 0) {
         throw new AuthError('Identifiants invalides');

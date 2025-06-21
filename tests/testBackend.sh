@@ -255,8 +255,8 @@ test_phase2_authentication() {
     
     if echo "$login_response" | grep -q '"accessToken"'; then
         print_success "Connexion utilisateur réussie"
-        ACCESS_TOKEN=$(echo "$login_response" | jq -r '.accessToken // empty')
-        REFRESH_TOKEN=$(echo "$login_response" | jq -r '.refreshToken // empty')
+        ACCESS_TOKEN=$(echo "$login_response" | jq -r '.tokens.accessToken // empty')
+        REFRESH_TOKEN=$(echo "$login_response" | jq -r '.tokens.refreshToken // empty')
         
         if [ -n "$ACCESS_TOKEN" ]; then
             print_info "Access Token reçu: ${ACCESS_TOKEN:0:20}..."
@@ -642,7 +642,7 @@ test_security_features() {
     protected_endpoints=(
         "/api/entries"
         "/api/groups"
-        "/api/users/profile"
+        "/api/users/me"
         "/api/auth/2fa/setup"
     )
     
