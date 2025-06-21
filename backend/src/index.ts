@@ -41,6 +41,20 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// Headers de sécurité additionnels
+app.use((_req: any, res: any, next: any) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  next();
+});
+
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
