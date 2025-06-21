@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { db } from '../config/database';
 import { ValidationError, NotFoundError, ForbiddenError, AuthError } from '../middleware/errorHandler';
 import { isValidUUID, isValidEntryType, validatePagination } from '../utils/validation';
+import { getUserId } from '../middleware/auth';
 
 // Fix pour Buffer dans l'environnement TypeScript
 declare const Buffer: any;
@@ -19,10 +20,7 @@ export class EntryController {
    */
   static async getEntries(req: Request, res: Response) {
     try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthError('Utilisateur non authentifié');
-      }
+      const userId = getUserId(req);
       
       const { type, search, limit = 50, offset = 0 } = req.query;
       
@@ -42,8 +40,8 @@ export class EntryController {
       
       // Tri et pagination
       query += ' ORDER BY updated_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
-      params.push(parseInt(limit as string));
-      params.push(parseInt(offset as string));
+      params.push(parseInt(limit as string).toString());
+      params.push(parseInt(offset as string).toString());
       
       const result = await db.query(query, params);
       
@@ -74,10 +72,7 @@ export class EntryController {
    */
   static async getEntry(req: Request, res: Response) {
     try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthError('Utilisateur non authentifié');
-      }
+      const userId = getUserId(req);
       
       const { id } = req.params;
       
@@ -147,10 +142,7 @@ export class EntryController {
    */
   static async createEntry(req: Request, res: Response) {
     try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthError('Utilisateur non authentifié');
-      }
+      const userId = getUserId(req);
       
       const { titleEncrypted, dataEncrypted, iv, authTag, type = 'password' } = req.body;
       
@@ -220,8 +212,7 @@ export class EntryController {
    */
   static async updateEntry(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       const { id } = req.params;
       const { titleEncrypted, dataEncrypted, iv, authTag } = req.body;
       
@@ -287,8 +278,7 @@ export class EntryController {
    */
   static async deleteEntry(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       const { id } = req.params;
       
       const result = await db.query(
@@ -331,10 +321,9 @@ export class EntryController {
    */
   static async getGroupEntries(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       const { groupId } = req.params;
-      const { type, search, limit = 50, offset = 0 } = req.query;
+      const { type, limit = 50, offset = 0 } = req.query;
       
       // Vérifier l'accès au groupe
       const memberCheck = await db.query(`
@@ -414,8 +403,7 @@ export class EntryController {
    */
   static async createGroupEntry(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       const { groupId } = req.params;
       const { titleEncrypted, dataEncrypted, iv, authTag, type = 'password', permissions } = req.body;
       
@@ -517,8 +505,7 @@ export class EntryController {
    */
   static async updateEntryPermissions(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       const { id } = req.params;
       const { permissions } = req.body;
       

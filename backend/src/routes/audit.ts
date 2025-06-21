@@ -3,8 +3,9 @@
  * Logs et monitoring des actions sensibles
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler';
+import { getUserId } from '../middleware/auth';
 import { db } from '../config/database';
 import { logger } from '../utils/logger';
 
@@ -14,10 +15,9 @@ const router = Router();
  * GET /api/audit/logs
  * Récupération des logs d'audit pour l'utilisateur
  */
-router.get('/logs', asyncHandler(async (req, res) => {
+router.get('/logs', asyncHandler(async (req: any, res: any) => {
   try {
-    // TODO: Récupérer l'utilisateur depuis le token JWT
-    const userId = 'user_id_placeholder';
+    const userId = getUserId(req);
     const { limit = 20, offset = 0, action } = req.query;
     
     let query = `
@@ -34,8 +34,8 @@ router.get('/logs', asyncHandler(async (req, res) => {
     }
     
     query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
-    params.push(parseInt(limit as string));
-    params.push(parseInt(offset as string));
+    params.push(limit as string);
+    params.push(offset as string);
     
     const result = await db.query(query, params);
     
@@ -46,7 +46,7 @@ router.get('/logs', asyncHandler(async (req, res) => {
     
     res.json({
       success: true,
-      logs: result.rows.map(log => ({
+      logs: result.rows.map((log: any) => ({
         id: log.id,
         action: log.action,
         resourceType: log.resource_type,
@@ -73,10 +73,9 @@ router.get('/logs', asyncHandler(async (req, res) => {
  * GET /api/audit/stats
  * Statistiques d'audit pour l'utilisateur
  */
-router.get('/stats', asyncHandler(async (req, res) => {
+router.get('/stats', asyncHandler(async (req: any, res: any) => {
   try {
-    // TODO: Récupérer l'utilisateur depuis le token JWT
-    const userId = 'user_id_placeholder';
+    const userId = getUserId(req);
     
     const result = await db.query(`
       SELECT 

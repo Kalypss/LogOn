@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../config/database';
 import { ValidationError, NotFoundError } from '../middleware/errorHandler';
+import { getUserId, getUserEmail } from '../middleware/auth';
 
 export class UserController {
   
@@ -15,11 +16,10 @@ export class UserController {
    */
   static async getProfile(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       
       const result = await db.query(`
-        SELECT id, email, totp_enabled, key_version, last_login_at, created_at
+        SELECT id, email, username, totp_enabled, key_version, last_login_at, created_at, is_active
         FROM users 
         WHERE id = $1
       `, [userId]);
@@ -37,10 +37,12 @@ export class UserController {
         user: {
           id: user.id,
           email: user.email,
+          username: user.username,
           totpEnabled: user.totp_enabled,
           keyVersion: user.key_version,
           lastLoginAt: user.last_login_at,
-          createdAt: user.created_at
+          createdAt: user.created_at,
+          isActive: user.is_active
         }
       });
       
@@ -55,9 +57,12 @@ export class UserController {
    */
   static async updateProfile(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
-      const { email } = req.body;
+      const userId = getUserId(req);
+      const { email, username } = req.body;
+      
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+      let paramCount = 1;
       
       if (email) {
         // Validation format email
@@ -76,9 +81,38 @@ export class UserController {
           throw new ValidationError('Cet email est déjà utilisé');
         }
         
+        updateFields.push(`email = $${paramCount++}`);
+        updateValues.push(email.toLowerCase());
+      }
+      
+      if (username !== undefined) {
+        if (username && username.length < 3) {
+          throw new ValidationError('Le nom d\'utilisateur doit contenir au moins 3 caractères');
+        }
+        
+        if (username) {
+          // Vérifier si le username n'est pas déjà utilisé
+          const existingUser = await db.query(
+            'SELECT id FROM users WHERE username = $1 AND id != $2',
+            [username, userId]
+          );
+          
+          if (existingUser.rows.length > 0) {
+            throw new ValidationError('Ce nom d\'utilisateur est déjà utilisé');
+          }
+        }
+        
+        updateFields.push(`username = $${paramCount++}`);
+        updateValues.push(username);
+      }
+      
+      if (updateFields.length > 0) {
+        updateFields.push(`updated_at = NOW()`);
+        updateValues.push(userId);
+        
         await db.query(
-          'UPDATE users SET email = $1, updated_at = NOW() WHERE id = $2',
-          [email.toLowerCase(), userId]
+          `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount}`,
+          updateValues
         );
       }
       
@@ -110,8 +144,7 @@ export class UserController {
    */
   static async deleteAccount(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       
       // Marquer le compte comme supprimé en ajoutant un timestamp
       await db.query(
@@ -147,8 +180,7 @@ export class UserController {
    */
   static async getStats(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       
       const statsResult = await db.query(`
         SELECT 

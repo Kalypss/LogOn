@@ -217,14 +217,27 @@ class DatabaseManager {
     success: boolean = true
   ): Promise<string> {
     try {
+      // Prepare details as JSON string if it's an object
+      let detailsJson = null;
+      if (details) {
+        detailsJson = typeof details === 'string' ? details : JSON.stringify(details);
+      }
+      
       const result = await this.query(
         'SELECT create_audit_log($1, $2, $3, $4, $5, $6, $7, $8) as log_id',
-        [userId, action, resourceType, resourceId, ipAddress, userAgent, details, success]
+        [userId, action, resourceType, resourceId, ipAddress, userAgent, detailsJson, success]
       );
       
       return result.rows[0].log_id;
     } catch (error) {
-      logger.error('❌ Erreur lors de la création du log d\'audit:', error);
+      logger.error('❌ Erreur lors de la création du log d\'audit:', {
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        action,
+        resourceType,
+        resourceId,
+        details
+      });
       throw error;
     }
   }

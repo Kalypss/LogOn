@@ -204,6 +204,9 @@ test_phase2_authentication() {
     # Test 2.1: Inscription utilisateur
     print_test "Inscription d'un nouvel utilisateur"
     
+    # Nettoyage préalable si l'utilisateur existe
+    curl -s -X DELETE "$API_BASE_URL/admin/cleanup/user/$USER_EMAIL" > /dev/null 2>&1 || true
+    
     register_data='{
         "email": "'$USER_EMAIL'",
         "username": "'$USER_USERNAME'",

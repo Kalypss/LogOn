@@ -39,6 +39,23 @@ export class AuthController {
         throw new ValidationError('Le nom d\'utilisateur doit contenir entre 3 et 50 caractères');
       }
       
+      // Validation des formats base64 pour salt et recoveryCodeSalt
+      try {
+        const saltBuffer = Buffer.from(salt, 'base64');
+        const recoveryCodeSaltBuffer = Buffer.from(recoveryCodeSalt, 'base64');
+        
+        if (saltBuffer.length === 0) {
+          throw new ValidationError('Le sel ne peut pas être vide');
+        }
+        
+        if (recoveryCodeSaltBuffer.length === 0) {
+          throw new ValidationError('Le sel de récupération ne peut pas être vide');
+        }
+      } catch (bufferError) {
+        logger.error('❌ Erreur validation format base64:', bufferError);
+        throw new ValidationError('Format base64 invalide pour salt ou recoveryCodeSalt');
+      }
+      
       // Vérifier si l'utilisateur existe déjà
       const existingUser = await db.query(
         'SELECT id FROM users WHERE email = $1',
@@ -141,24 +158,61 @@ export class AuthController {
       // Conversion sécurisée du sel depuis la base de données
       let saltBase64: string;
       try {
+        // PostgreSQL bytea peut être retourné sous différentes formes
+        if (user.salt === null || user.salt === undefined) {
+          logger.error('❌ Sel utilisateur null ou undefined', { 
+            email: email.toLowerCase(),
+            saltValue: user.salt 
+          });
+          throw new AppError('Sel utilisateur invalide', 500);
+        }
+        
         if (Buffer.isBuffer(user.salt)) {
+          // Si c'est un Buffer, conversion directe
           saltBase64 = user.salt.toString('base64');
         } else if (typeof user.salt === 'string') {
-          // Si c'est déjà une string, on suppose que c'est en base64
-          saltBase64 = user.salt;
+          // Si c'est une string, vérifier si c'est du base64 ou hexadécimal
+          if (user.salt.startsWith('\\x')) {
+            // Format hexadécimal PostgreSQL
+            const hexData = user.salt.slice(2);
+            saltBase64 = Buffer.from(hexData, 'hex').toString('base64');
+          } else {
+            // Supposer que c'est déjà en base64
+            saltBase64 = user.salt;
+          }
+        } else if (user.salt instanceof Uint8Array) {
+          // Si c'est un Uint8Array
+          saltBase64 = Buffer.from(user.salt).toString('base64');
         } else {
-          // PostgreSQL bytea peut être retourné sous différentes formes
-          // Essayer de le convertir en Buffer
-          const saltBuffer = Buffer.from(user.salt);
-          saltBase64 = saltBuffer.toString('base64');
+          // Dernière tentative : s'assurer qu'on a des données valides
+          logger.warn('⚠️ Type de sel inattendu, tentative de conversion:', {
+            saltType: typeof user.salt,
+            saltConstructor: user.salt.constructor?.name || 'unknown',
+            saltValue: user.salt
+          });
+          
+          // Vérifier si c'est un objet avec des données
+          if (user.salt && typeof user.salt === 'object' && user.salt.data) {
+            saltBase64 = Buffer.from(user.salt.data).toString('base64');
+          } else {
+            // Essayer de convertir tel quel
+            saltBase64 = Buffer.from(String(user.salt), 'utf8').toString('base64');
+          }
         }
+        
+        // Vérifier que la conversion a donné un résultat valide
+        if (!saltBase64 || saltBase64.length === 0) {
+          throw new Error('Conversion du sel a donné un résultat vide');
+        }
+        
       } catch (conversionError) {
         logger.error('❌ Erreur conversion sel:', { 
-          error: conversionError,
+          error: conversionError instanceof Error ? conversionError.message : String(conversionError),
           saltType: typeof user.salt,
-          saltValue: user.salt
+          saltValue: user.salt,
+          email: email.toLowerCase()
         });
-        throw new AppError('Erreur lors de la récupération du sel', 500);
+        throw new AppError('Erreur lors de la récupération du sel utilisateur', 500);
       }
 
       res.json({
@@ -306,8 +360,7 @@ export class AuthController {
    */
   static async logout(req: Request, res: Response) {
     try {
-      // TODO: Récupérer l'utilisateur depuis le token JWT
-      const userId = 'user_id_placeholder';
+      const userId = getUserId(req);
       
       // Log de déconnexion
       await db.createAuditLog(
@@ -337,13 +390,34 @@ export class AuthController {
    */
   static async verify(req: Request, res: Response) {
     try {
-      // TODO: Vérifier le token JWT
-      logger.info('🔍 Vérification de session à implémenter');
+      const userId = getUserId(req);
+      
+      // Récupérer les infos utilisateur pour vérification
+      const result = await db.query(
+        'SELECT id, email, is_active, totp_enabled FROM users WHERE id = $1',
+        [userId]
+      );
+      
+      if (result.rows.length === 0) {
+        throw new AuthError('Utilisateur non trouvé');
+      }
+      
+      const user = result.rows[0];
+      
+      if (!user.is_active) {
+        throw new AuthError('Compte désactivé');
+      }
+      
+      logger.info('✅ Session valide:', { userId });
       
       res.json({
         success: true,
-        valid: false,
-        message: 'Vérification de session à implémenter'
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          totpEnabled: user.totp_enabled
+        }
       });
       
     } catch (error) {

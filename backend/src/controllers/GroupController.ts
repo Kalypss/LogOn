@@ -9,6 +9,7 @@ import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { db } from '../config/database';
 import { ValidationError, NotFoundError, ForbiddenError } from '../middleware/errorHandler';
+import { getUserId } from '../middleware/auth';
 
 export class GroupController {
   
@@ -17,7 +18,7 @@ export class GroupController {
    */
   static async getGroups(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       
       const result = await db.query(`
         SELECT 
@@ -69,7 +70,7 @@ export class GroupController {
    */
   static async createGroup(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { name, encryptedDescription, encryptedGroupKey } = req.body;
       
       // Validation des données requises
@@ -139,7 +140,7 @@ export class GroupController {
    */
   static async getGroup(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id } = req.params;
       
       // Vérifier l'accès au groupe
@@ -203,7 +204,7 @@ export class GroupController {
    */
   static async getGroupMembers(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id } = req.params;
       
       // Vérifier l'accès au groupe
@@ -256,7 +257,7 @@ export class GroupController {
    */
   static async inviteMember(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id } = req.params;
       const { email, encryptedGroupKey } = req.body;
       
@@ -342,7 +343,7 @@ export class GroupController {
    */
   static async updateMemberRole(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id, memberId } = req.params;
       const { role } = req.body;
       
@@ -423,7 +424,7 @@ export class GroupController {
    */
   static async removeMember(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id, memberId } = req.params;
       
       // Vérifier que l'utilisateur est admin du groupe OU se retire lui-même
@@ -506,7 +507,7 @@ export class GroupController {
    */
   static async updateGroup(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id } = req.params;
       const { name, encryptedDescription } = req.body;
       
@@ -576,7 +577,7 @@ export class GroupController {
    */
   static async deleteGroup(req: Request, res: Response) {
     try {
-      const userId = req.userId;
+      const userId = getUserId(req);
       const { id } = req.params;
       
       // Vérifier que l'utilisateur est admin du groupe
