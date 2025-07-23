@@ -1,0 +1,20 @@
+# Rule set GitHub pour LogOn
+# Protège la branche main, force les PR, reviews et CI
+name: "Main branch protection"
+enforcement: active
+rules:
+  - type: branch_protection
+    branches: ["main"]
+    required_status_checks:
+      strict: true
+      contexts: ["ci/test", "ci/lint"]
+    required_pull_request_reviews:
+      required_approving_review_count: 1
+      dismiss_stale_reviews: true
+    enforce_admins: true
+    restrictions:
+      users: []
+      teams: []
+    required_linear_history: true
+    allow_force_pushes: false
+    allow_deletions: false
