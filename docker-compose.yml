@@ -1,8 +1,6 @@
 # Configuration Docker Compose pour LogOn Password Manager
 # Architecture multi-services sécurisée avec séparation des réseaux
 
-version: '3.8'
-
 services:
   # Frontend Nuxt.js
   frontend:

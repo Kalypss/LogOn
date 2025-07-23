@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/AuthController';
 import { asyncHandler } from '../middleware/errorHandler';
-import { rateLimitConfig } from '../middleware/security/rateLimit';
+import { rateLimitConfig, saltRateLimiter } from '../middleware/security/rateLimit';
 import { requireAuth } from '../middleware/auth';
 import rateLimit from 'express-rate-limit';
 
@@ -26,6 +26,7 @@ router.post('/register',
  * Récupération du sel pour la dérivation de clés
  */
 router.post('/salt', 
+  saltRateLimiter,
   rateLimit(rateLimitConfig.salt), 
   asyncHandler(AuthController.getSalt)
 );

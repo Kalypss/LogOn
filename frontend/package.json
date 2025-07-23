@@ -1,40 +1,31 @@
 {
-  "name": "nuxt-app",
-  "private": true,
+  "name": "frontend",
   "type": "module",
+  "version": "0.0.1",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "dependencies": {
-    "@fontsource/dm-sans": "^5.2.6",
-    "@nuxtjs/color-mode": "^3.5.2",
-    "@nuxtjs/tailwindcss": "^7.0.0-beta.0",
-    "@unovis/ts": "^1.5.2",
-    "@unovis/vue": "^1.5.2",
+    "@astrojs/mdx": "^4.3.1",
+    "@astrojs/vue": "^5.1.0",
+    "@tailwindcss/vite": "^4.1.3",
+    "@types/canvas-confetti": "^1.9.0",
     "@vee-validate/zod": "^4.15.1",
-    "@vueuse/core": "^13.4.0",
-    "buffer": "^6.0.3",
+    "@vueuse/core": "^13.5.0",
+    "astro": "^5.12.1",
+    "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "embla-carousel-vue": "^8.6.0",
-    "lucide-vue-next": "^0.518.0",
-    "nuxt": "^3.17.5",
-    "reka-ui": "^2.3.1",
-    "shadcn-nuxt": "^2.2.0",
+    "lucide-vue-next": "^0.525.0",
+    "reka-ui": "^2.3.2",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss-animate": "^1.0.7",
-    "vaul-vue": "^0.4.1",
+    "tailwindcss": "^4.1.3",
+    "tw-animate-css": "^1.3.5",
     "vee-validate": "^4.15.1",
-    "vue": "^3.5.16",
-    "vue-router": "^4.5.1",
-    "vue-sonner": "^2.0.0",
-    "zod": "^3.25.67"
-  },
-  "devDependencies": {
-    "tailwindcss": "^4.1.10"
+    "vue": "^3.5.17",
+    "zod": "^4.0.5"
   }
 }

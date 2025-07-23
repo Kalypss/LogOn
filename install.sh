@@ -42,10 +42,10 @@ echo -e "${PURPLE}"
 cat << "EOF"
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║    🔐 LogOn Password Manager - Installation Automatique     ║
+║    🔐 LogOn Password Manager - Installation Automatique      ║
 ║                                                              ║
-║    Gestionnaire de mots de passe zéro-connaissance          ║
-║    Architecture ultra-sécurisée pour déploiement local      ║
+║    Gestionnaire de mots de passe zéro-connaissance           ║
+║    Architecture ultra-sécurisée pour déploiement local       ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF
@@ -373,7 +373,7 @@ display_final_info() {
 
 ╔══════════════════════════════════════════════════════════════╗
 ║                                                              ║
-║               🎉 Installation Terminée ! 🎉                ║
+║               🎉 Installation Terminée ! 🎉                  ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 EOF

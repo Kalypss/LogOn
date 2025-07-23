@@ -72,7 +72,7 @@ export const monitoringMiddleware = (req: Request, res: Response, next: NextFunc
       path: req.path,
       statusCode: res.statusCode,
       responseTime,
-      contentLength: data ? Buffer.byteLength(data, 'utf8') : 0,
+      contentLength: data ? Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data), 'utf8') : 0,
       userAgent: req.get('User-Agent') || 'unknown',
       ip: req.ip || 'unknown',
       userId: (req as any).user?.id,

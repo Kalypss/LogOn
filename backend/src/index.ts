@@ -3,12 +3,19 @@
  * Configuration Express avec middlewares de sécurité
  */
 
+import { config } from 'dotenv';
+import path from 'path';
+
+// Chargement des variables d'environnement depuis la racine du projet AVANT tout autre import
+const envPath = path.resolve(process.cwd(), '../.env');
+config({ path: envPath });
+
+// Imports après chargement des variables d'environnement
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import { config } from 'dotenv';
 import { db } from './config/database';
 import { logger, requestLogger } from './utils/logger';
 import { errorHandler, notFoundHandler, setupGlobalErrorHandlers } from './middleware/errorHandler';
@@ -16,8 +23,7 @@ import { rateLimitConfig } from './middleware/security/rateLimit';
 import { cspMiddleware, apiCSPMiddleware } from './middleware/security/csp';
 import { monitoringMiddleware, getSystemMetrics, getPerformanceStats, getTopEndpoints, getSecurityMetrics, cleanupOldMetrics } from './middleware/monitoring';
 
-// Chargement des variables d'environnement
-config();
+logger.info(`Variables d'environnement chargées depuis: ${envPath}`);
 
 // Configuration des gestionnaires d'erreurs globaux
 setupGlobalErrorHandlers();
@@ -59,7 +65,17 @@ app.use((_req: any, res: any, next: any) => {
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? [process.env.FRONTEND_URL || 'https://localhost:3000']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    : [
+        'http://localhost:3000', 
+        'http://127.0.0.1:3000',
+        'https://localhost:3000',
+        'https://127.0.0.1:3000',
+        // Adresses Docker
+        'http://logon-frontend:3000',
+        'https://logon-frontend:3000',
+        // Adresses réseau Docker (172.x.x.x)
+        /^https?:\/\/172\.\d+\.\d+\.\d+:3000$/
+      ],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -71,7 +87,61 @@ app.use(cors(corsOptions));
 // Compression des réponses
 app.use(compression());
 
-// Parsing des requêtes
+// Middleware de parsing JSON personnalisé avec gestion d'erreurs robuste
+app.use('/api', (req: any, res: any, next: any) => {
+  const requestId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  logger.debug(`🔍 [JSON Parser] Début parsing pour ${req.method} ${req.path}`, {
+    requestId,
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length']
+  });
+  
+  // Passer au middleware JSON standard avec gestion d'erreurs améliorée
+  express.json({ 
+    limit: '10mb',
+    verify: (req: any, res: any, buf: any, encoding: any) => {
+      try {
+        if (buf && buf.length) {
+          req.rawBody = buf.toString(encoding || 'utf8');
+          logger.debug(`🔍 [JSON Parser] Raw body reçu:`, {
+            requestId,
+            rawBodyLength: req.rawBody.length,
+            rawBodyPreview: req.rawBody.substring(0, 100) + '...'
+          });
+        }
+      } catch (error) {
+        logger.error(`❌ [JSON Parser] Erreur verification:`, {
+          error: error instanceof Error ? error.message : String(error),
+          requestId
+        });
+      }
+    }
+  })(req, res, (error: any) => {
+    if (error) {
+      logger.error(`❌ [JSON Parser] Erreur parsing JSON:`, {
+        error: error.message,
+        requestId,
+        body: req.rawBody ? req.rawBody.substring(0, 200) + '...' : 'undefined'
+      });
+      
+      // Assigner un body vide si le parsing échoue
+      req.body = {};
+      
+      // Continuer sans erreur pour éviter les rejets de promesses
+      next();
+    } else {
+      logger.debug(`✅ [JSON Parser] Parsing réussi:`, {
+        requestId,
+        bodyKeys: req.body ? Object.keys(req.body) : 'no keys',
+        bodyType: typeof req.body
+      });
+      next();
+    }
+  });
+});
+
+// Parsing des requêtes standard pour les autres routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -236,8 +306,17 @@ async function startServer() {
     });
     
     process.on('unhandledRejection', (reason, promise) => {
-      logger.error('❌ Rejection non gérée:', { reason, promise });
-      gracefulShutdown('unhandledRejection');
+      logger.error('❌ 💥 Promesse rejetée non gérée:', {
+        reason: reason instanceof Error ? reason.message.substring(0, 100) + '...' : String(reason).substring(0, 100) + '...',
+        stack: reason instanceof Error ? reason.stack?.substring(0, 100) + '...' : 'N/A',
+        promise: 'Promise rejected'
+      });
+      
+      if (process.env.NODE_ENV === 'development') {
+        logger.warn('⚠️ Continuer en mode développement - corriger l\'erreur ci-dessus');
+      } else {
+        gracefulShutdown('unhandledRejection');
+      }
     });
 
     // Nettoyage périodique des sessions expirées (toutes les heures)

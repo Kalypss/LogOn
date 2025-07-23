@@ -27,23 +27,71 @@ declare global {
 /**
  * Middleware d'authentification obligatoire
  */
+/**
+ * Middleware d'authentification obligatoire avec protection anti-concurrence
+ */
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+  const requestId = req.headers['x-request-id'] || `req_auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
+    logger.debug(`🔍 [${requestId}] requireAuth début`);
+    
     const authHeader = req.headers.authorization;
-    const token = JWTService.extractTokenFromHeader(authHeader);
+    logger.debug(`🔍 [${requestId}] Header reçu:`, {
+      hasHeader: !!authHeader,
+      headerType: typeof authHeader,
+      headerLength: authHeader ? authHeader.length : 0
+    });
+
+    // Extraction isolée du token
+    let token: string | null = null;
+    try {
+      token = JWTService.extractTokenFromHeader(authHeader);
+    } catch (extractError) {
+      logger.error(`❌ [${requestId}] Erreur extraction token:`, {
+        error: extractError instanceof Error ? extractError.message : 'Erreur inconnue'
+      });
+      throw new AuthError('Erreur lors de l\'extraction du token');
+    }
+
+    logger.debug(`🔍 [${requestId}] Token extrait:`, {
+      hasToken: !!token,
+      tokenType: typeof token,
+      tokenLength: token ? token.length : 0
+    });
 
     if (!token) {
       throw new AuthError('Token d\'authentification requis');
     }
 
-    // Vérifier le token
-    const payload = JWTService.verifyAccessToken(token);
+    // Vérification isolée du token avec protection d'erreur
+    let payload: TokenPayload;
+    try {
+      logger.debug(`🔍 [${requestId}] Début vérification JWT`);
+      payload = JWTService.verifyAccessToken(token);
+      logger.debug(`🔍 [${requestId}] JWT vérifié avec succès`);
+    } catch (jwtError) {
+      logger.warn(`🔒 [${requestId}] Token JWT invalide:`, {
+        error: jwtError instanceof Error ? jwtError.message : 'Erreur inconnue',
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+      throw new AuthError('Token invalide');
+    }
 
-    // Vérifier que l'utilisateur existe toujours
-    const userResult = await db.query(
-      'SELECT id, email, is_active FROM users WHERE id = $1',
-      [payload.userId]
-    );
+    // Vérification utilisateur en base
+    let userResult;
+    try {
+      userResult = await db.query(
+        'SELECT id, email, is_active FROM users WHERE id = $1',
+        [payload.userId]
+      );
+    } catch (dbError) {
+      logger.error(`❌ [${requestId}] Erreur base de données:`, {
+        error: dbError instanceof Error ? dbError.message : 'Erreur inconnue'
+      });
+      throw new AuthError('Erreur lors de la vérification utilisateur');
+    }
 
     if (userResult.rows.length === 0) {
       throw new AuthError('Utilisateur non trouvé');
@@ -55,20 +103,23 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       throw new AuthError('Compte désactivé');
     }
 
-    // Ajouter l'utilisateur à la requête (compatibilité)
-    req.user = {
-      id: user.id,
-      email: user.email,
-      payload
-    };
-    req.userId = user.id;
-    req.userEmail = user.email;
+    // Ajouter l'utilisateur à la requête (isolation complète)
+    req.user = Object.freeze({
+      id: String(user.id),
+      email: String(user.email),
+      payload: Object.freeze({ ...payload })
+    });
+    req.userId = String(user.id);
+    req.userEmail = String(user.email);
 
+    logger.debug(`🔍 [${requestId}] Authentification réussie`);
     next();
+
   } catch (error) {
-    logger.warn('🔒 Tentative d\'accès non autorisé:', { 
+    logger.warn(`🔒 [${requestId}] Accès non autorisé:`, { 
       ip: req.ip, 
       userAgent: req.get('User-Agent'),
+      path: req.path,
       error: error instanceof Error ? error.message : 'Erreur inconnue'
     });
 
@@ -83,7 +134,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     return res.status(401).json({
       success: false,
       error: 'Non autorisé',
-      message: 'Token invalide'
+      message: 'Erreur d\'authentification'
     });
   }
 };
@@ -100,8 +151,16 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       return next(); // Pas de token, continuer sans utilisateur
     }
 
-    // Vérifier le token
-    const payload = JWTService.verifyAccessToken(token);
+    // Vérifier le token avec gestion d'erreur robuste
+    let payload: TokenPayload;
+    try {
+      payload = JWTService.verifyAccessToken(token);
+    } catch (jwtError) {
+      logger.debug('🔍 Auth optionnelle - token invalide:', {
+        error: jwtError instanceof Error ? jwtError.message : 'Erreur inconnue'
+      });
+      return next(); // Token invalide, continuer sans utilisateur
+    }
 
     // Vérifier que l'utilisateur existe
     const userResult = await db.query(
@@ -123,7 +182,9 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     next();
   } catch (error) {
     // En cas d'erreur avec l'auth optionnelle, continuer sans utilisateur
-    logger.debug('🔍 Auth optionnelle échouée:', error);
+    logger.debug('🔍 Auth optionnelle échouée:', {
+      error: error instanceof Error ? error.message : 'Erreur inconnue'
+    });
     next();
   }
 };

@@ -1,0 +1,44 @@
+---
+layout: ../layouts/auth.astro
+---
+import '../../styles/global.css';
+import DoubleAuthComponent from '@/components/DoubleAuthComponent.vue';
+import { ChevronLeft } from 'lucide-vue-next';
+import { SunDim , Moon } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import FAComponent from '@/components/DoubleAuthComponent.vue';
+--- 
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Logon - 2FA</title>
+	</head>
+
+	<body>
+		<!-- Toggle Theme -->
+		<Button
+			class="absolute top-4 right-4 z-50 flex items-center justify-center p-2 cursor-pointer"
+			variant={"ghost"}
+		>
+			<span id="theme-toggle-icon">
+				<SunDim />
+			</span>
+		</Button>
+
+		<Button class="absolute top-4 left-4 z-50 text-center flex items-center justify-center">
+			<a href="/" class="flex items-center gap-2">
+				<ChevronLeft class="inline-block align-middle" />
+				Menu
+			</a>
+		</Button>
+
+		<div class="grid place-items-center h-screen content-center">
+			<DoubleAuthComponent client:only="vue" />
+		</div>
+
+	</body>
+</html>

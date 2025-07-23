@@ -213,9 +213,15 @@ export const setupGlobalErrorHandlers = () => {
   process.on('unhandledRejection', (reason: any) => {
     logger.error('💥 Promesse rejetée non gérée:', {
       reason: reason?.message || reason,
-      stack: reason?.stack,
-      promise: 'Promise rejected'
+      stack: reason?.stack || 'No stack available',
+      promise: 'Promise rejected',
+      fullError: reason
     });
+    
+    // Log de débogage supplémentaire pour comprendre l'origine
+    if (reason && reason.stack) {
+      console.error('FULL STACK TRACE:', reason.stack);
+    }
     
     // En développement, on continue mais on log l'erreur
     // En production, on redémarre pour éviter un état instable

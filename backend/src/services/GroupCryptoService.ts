@@ -5,6 +5,7 @@
  * Utilise RSA pour le chiffrement des clés AES de groupe
  */
 
+import crypto from 'crypto';
 import { logger } from '../utils/logger';
 
 export class GroupCryptoService {
@@ -15,21 +16,13 @@ export class GroupCryptoService {
    */
   static generateGroupKey(): string {
     try {
-      // Génération d'une clé AES-256 (32 bytes)
-      const key = new Uint8Array(32);
+      // Génération d'une clé AES-256 (32 bytes) avec Node.js crypto
+      const key = crypto.randomBytes(32);
       
-      // Utilisation de crypto.getRandomValues pour sécurité
-      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-        crypto.getRandomValues(key);
-      } else {
-        // Fallback pour Node.js
-        const cryptoNode = require('crypto');
-        const buffer = cryptoNode.randomBytes(32);
-        key.set(buffer);
-      }
+      logger.debug('🔑 Clé de groupe générée avec succès');
       
       // Conversion en base64 pour stockage
-      return Buffer.from(key).toString('base64');
+      return key.toString('base64');
       
     } catch (error) {
       logger.error('❌ Erreur lors de la génération de clé de groupe:', error);
@@ -43,25 +36,24 @@ export class GroupCryptoService {
    */
   static async generateUserKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
     try {
-      // Génération de paire de clés RSA-2048
-      const keyPair = await crypto.subtle.generateKey(
-        {
-          name: 'RSA-OAEP',
-          modulusLength: 2048,
-          publicExponent: new Uint8Array([1, 0, 1]),
-          hash: 'SHA-256',
+      // Génération de paire de clés RSA-2048 avec Node.js crypto
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: {
+          type: 'spki',
+          format: 'der'
         },
-        true, // extractable
-        ['encrypt', 'decrypt']
-      );
+        privateKeyEncoding: {
+          type: 'pkcs8',
+          format: 'der'
+        }
+      });
       
-      // Export des clés
-      const publicKey = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-      const privateKey = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+      logger.debug('🔑 Paire de clés RSA générée avec succès');
       
       return {
-        publicKey: Buffer.from(publicKey).toString('base64'),
-        privateKey: Buffer.from(privateKey).toString('base64')
+        publicKey: publicKey.toString('base64'),
+        privateKey: privateKey.toString('base64')
       };
       
     } catch (error) {
@@ -78,28 +70,23 @@ export class GroupCryptoService {
     userPublicKey: string
   ): Promise<string> {
     try {
-      // Import de la clé publique
+      // Conversion de la clé publique depuis base64
       const publicKeyBuffer = Buffer.from(userPublicKey, 'base64');
-      const publicKey = await crypto.subtle.importKey(
-        'spki',
-        publicKeyBuffer,
-        {
-          name: 'RSA-OAEP',
-          hash: 'SHA-256',
-        },
-        false,
-        ['encrypt']
-      );
-      
-      // Chiffrement de la clé de groupe
       const groupKeyBuffer = Buffer.from(groupKey, 'base64');
-      const encryptedKey = await crypto.subtle.encrypt(
-        'RSA-OAEP',
-        publicKey,
+      
+      // Chiffrement RSA avec Node.js crypto
+      const encryptedKey = crypto.publicEncrypt(
+        {
+          key: publicKeyBuffer,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: 'sha256'
+        },
         groupKeyBuffer
       );
       
-      return Buffer.from(encryptedKey).toString('base64');
+      logger.debug('🔒 Clé de groupe chiffrée avec succès pour utilisateur');
+      
+      return encryptedKey.toString('base64');
       
     } catch (error) {
       logger.error('❌ Erreur lors du chiffrement de clé de groupe:', error);
@@ -115,28 +102,23 @@ export class GroupCryptoService {
     userPrivateKey: string
   ): Promise<string> {
     try {
-      // Import de la clé privée
+      // Conversion des clés depuis base64
       const privateKeyBuffer = Buffer.from(userPrivateKey, 'base64');
-      const privateKey = await crypto.subtle.importKey(
-        'pkcs8',
-        privateKeyBuffer,
-        {
-          name: 'RSA-OAEP',
-          hash: 'SHA-256',
-        },
-        false,
-        ['decrypt']
-      );
-      
-      // Déchiffrement de la clé de groupe
       const encryptedKeyBuffer = Buffer.from(encryptedGroupKey, 'base64');
-      const groupKey = await crypto.subtle.decrypt(
-        'RSA-OAEP',
-        privateKey,
+      
+      // Déchiffrement RSA avec Node.js crypto
+      const groupKey = crypto.privateDecrypt(
+        {
+          key: privateKeyBuffer,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: 'sha256'
+        },
         encryptedKeyBuffer
       );
       
-      return Buffer.from(groupKey).toString('base64');
+      logger.debug('🔓 Clé de groupe déchiffrée avec succès pour utilisateur');
+      
+      return groupKey.toString('base64');
       
     } catch (error) {
       logger.error('❌ Erreur lors du déchiffrement de clé de groupe:', error);
