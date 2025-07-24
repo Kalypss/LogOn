@@ -1,0 +1,63 @@
+---
+/**
+ * Page de saisie du code de récupération pour Logon
+ * Routage dynamique : /auth/recovery-code-enter/[username]
+ * Affiche un formulaire pour entrer un code de récupération (48 caractères)
+ * - Sécurité et UX optimisées
+ * - Affichage du nom d'utilisateur ciblé
+ */
+import '../../../styles/global.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Auth from '@/layouts/auth.astro';
+
+// Correction Astro : retourne un tableau vide pour activer le SSR sur tous les usernames
+export async function getStaticPaths() {
+  return [];
+}
+
+const { username } = Astro.params;
+let error = '';
+let code = '';
+
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  code = formData.get('recovery_code')?.toString() || '';
+  if (!code || code.length !== 48) {
+    error = 'Le code doit contenir exactement 48 caractères.';
+  } else {
+    // Ici, logique de vérification du code côté serveur
+    // Redirige ou affiche un message de succès selon le résultat
+  }
+}
+---
+
+<Auth content={{ title: `Récupération - ${username}` }}>
+  <form method="POST" class="max-w-md mx-auto mt-8 flex flex-col gap-6">
+    <div>
+      <h2 class="text-xl font-bold mb-2">Récupération du compte</h2>
+      <p class="text-sm text-muted-foreground mb-4">
+        Utilisateur ciblé : <span class="font-semibold text-primary">{username}</span>
+      </p>
+    </div>
+    <div class="grid gap-2">
+      <Label for="recovery_code" class="text-base">Code de récupération</Label>
+      <Input
+        name="recovery_code"
+        maxlength="48"
+        minlength="48"
+        pattern="[A-Za-z0-9]{48}"
+        required
+        autocomplete="off"
+        placeholder="Entrez votre code de récupération (48 caractères)"
+        class="tracking-widest text-lg text-center font-mono"
+        value={code}
+      />
+      {error && <span class="text-red-500 text-sm mt-1">{error}</span>}
+    </div>
+    <Button class="w-full cursor-pointer active:scale-95 active:shadow-inner transition-transform">
+      Valider le code
+    </Button>
+  </form>
+</Auth>

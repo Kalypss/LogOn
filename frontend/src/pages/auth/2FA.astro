@@ -1,44 +1,34 @@
 ---
-layout: ../layouts/auth.astro
----
 import '../../styles/global.css';
-import DoubleAuthComponent from '@/components/DoubleAuthComponent.vue';
+import DoubleAuthComponent from '@/components/auth/DoubleAuthComponent.vue';
 import { ChevronLeft } from 'lucide-vue-next';
-import { SunDim , Moon } from 'lucide-vue-next';
+import { SunDim , Moon, Fingerprint } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
-import FAComponent from '@/components/DoubleAuthComponent.vue';
---- 
+import Auth from '@/layouts/auth.astro';
+---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Logon - 2FA</title>
-	</head>
-
-	<body>
-		<!-- Toggle Theme -->
-		<Button
-			class="absolute top-4 right-4 z-50 flex items-center justify-center p-2 cursor-pointer"
-			variant={"ghost"}
-		>
-			<span id="theme-toggle-icon">
-				<SunDim />
-			</span>
-		</Button>
-
-		<Button class="absolute top-4 left-4 z-50 text-center flex items-center justify-center">
-			<a href="/" class="flex items-center gap-2">
-				<ChevronLeft class="inline-block align-middle" />
-				Menu
-			</a>
-		</Button>
-
-		<div class="grid place-items-center h-screen content-center">
+<Auth content={{ title: 'Logon - 2FA' }}>
+	<div class="flex items-center justify-center min-h-screen"> 
+		<div class="flex flex-col gap-4 max-w-md items-center justify-center min-h-screen">
+			<div class="flex justify-center flex-col items-center gap-1.5">
+				<Fingerprint class="inline-block align-middle" />
+				<h1 class="text-3xl tracking-tight items-center justify-center">
+					Logon · 2FA	
+				</h1>
+			</div>
 			<DoubleAuthComponent client:only="vue" />
 		</div>
+	</div>
 
-	</body>
-</html>
+</Auth>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+h1{
+	font-family: 'Inter', sans-serif;
+	font-weight: 600;
+}
+
+</style>

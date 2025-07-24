@@ -1,6 +1,10 @@
 ---
 import '../styles/global.css';
-import ToggleTheme from '@/components/ui/ToggleTheme.vue';
+import ToggleTheme from '@/components/main/ToggleTheme.vue';
+import BugReportComponent from '@/components/main/BugReportComponent.vue';
+import { Button } from '@/components/ui/button';
+import { ArrowLeftToLine } from 'lucide-vue-next';
+
 const { content } = Astro.props;
 ---
 
@@ -11,8 +15,28 @@ const { content } = Astro.props;
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <title>{content?.title ?? 'Logon'}</title>
     </head>
-    <body>
-        <ToggleTheme client:only="vue" />
+    <body class="flex flex-col min-h-screen overflow-hidden">
+        <header class="w-full flex flex-row items-center justify-between gap-2 px-4 py-2">
+            <Button class="flex items-center gap-2 active:scale-95 active:shadow-inner transition-transform group" variant="outline">
+                <a href="/" class="flex items-center gap-2">
+                    <ArrowLeftToLine />
+                    Back Home
+                </a>
+            </Button>
+            <div class="flex flex-row items-center gap-2">
+                <BugReportComponent client:only="vue" />
+                <ToggleTheme client:only="vue" />
+            </div>
+        </header>
         <slot />
     </body>
 </html>
+
+
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+* {
+  font-family: 'Inter', sans-serif;
+}
+</style>

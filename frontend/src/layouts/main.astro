@@ -1,8 +1,8 @@
 
 ---
 import '../styles/global.css';
-import ToggleTheme from '@/components/ui/ToggleTheme.vue';
-import BugReportComponent from '@/components/BugReportComponent.vue';
+import ToggleTheme from '@/components/main/ToggleTheme.vue';
+import BugReportComponent from '@/components/main/BugReportComponent.vue';
 import { LogIn } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 interface Props {
@@ -22,7 +22,6 @@ const { title = 'Logon' } = Astro.props as Props;
 	<div class="fixed top-4 right-4 z-50 flex flex-row gap-2 items-center">
 	  <BugReportComponent client:only="vue" />
 	  <ToggleTheme client:only="vue" />
-
 	</div>
 	<div class="flex-1 flex flex-col">
 	  <slot />
@@ -50,3 +49,12 @@ const { title = 'Logon' } = Astro.props as Props;
   </footer>
   </body>
 </html>
+
+
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+* {
+  font-family: 'Inter', sans-serif;
+}
+</style>
