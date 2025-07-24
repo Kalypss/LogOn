@@ -43,11 +43,11 @@ function submitBug() {
 <template>
 <Dialog @close="resetForm">
   <DialogTrigger>
-    <Button variant="destructive" class="w-full cursor-pointer">
+    <Button variant="destructive" class="w-full cursor-pointer active:scale-95 active:shadow-inner transition-transform group">
        <BadgeAlert class="mr-2" /> Signaler un bug
     </Button>
   </DialogTrigger>
-  <DialogContent class="sm:max-w-[480px]">
+  <DialogContent class="">
     <DialogHeader>
       <DialogTitle>Signaler un bug</DialogTitle>
       <DialogDescription>
