@@ -10,14 +10,13 @@ import '../../../styles/global.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import Auth from '@/layouts/auth.astro';
 
 // Correction Astro : retourne un tableau vide pour activer le SSR sur tous les usernames
-export async function getStaticPaths() {
-  return [];
-}
-
+export const prerender = false; // Pas nécessaire en mode `server`
 const { username } = Astro.params;
+
 let error = '';
 let code = '';
 
@@ -36,14 +35,14 @@ if (Astro.request.method === 'POST') {
 <Auth content={{ title: `Récupération - ${username}` }}>
   <form method="POST" class="max-w-md mx-auto mt-8 flex flex-col gap-6">
     <div>
-      <h2 class="text-xl font-bold mb-2">Récupération du compte</h2>
+      <h2 class="text-xl font-bold mb-2">Récupération de compte</h2>
       <p class="text-sm text-muted-foreground mb-4">
         Utilisateur ciblé : <span class="font-semibold text-primary">{username}</span>
       </p>
     </div>
     <div class="grid gap-2">
       <Label for="recovery_code" class="text-base">Code de récupération</Label>
-      <Input
+      <Textarea
         name="recovery_code"
         maxlength="48"
         minlength="48"

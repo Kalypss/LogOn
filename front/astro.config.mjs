@@ -2,6 +2,7 @@
 
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
+import node from '@astrojs/node';
 
 import vue from '@astrojs/vue';
 
@@ -10,6 +11,10 @@ export default defineConfig({
   vite: {
       plugins: [tailwindcss()],
 	},
+  
+  adapter: node({
+    mode: 'standalone',
+  }),
 
   integrations: [vue()],
 });
