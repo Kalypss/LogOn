@@ -1,6 +1,10 @@
 ---
 import '../styles/global.css';
-import ToggleTheme from '@/components/ui/ToggleTheme.vue';
+import ToggleTheme from '@/components/main/ToggleTheme.vue';
+import BugReportComponent from '@/components/main/BugReportComponent.vue';
+import { Button } from '@/components/ui/button';
+import { ArrowLeftToLine } from 'lucide-vue-next';
+
 const { content } = Astro.props;
 ---
 
@@ -9,10 +13,23 @@ const { content } = Astro.props;
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <title>{content?.title ?? 'Dashboard'}</title>
+        <title>{content?.title ?? 'Logon'}</title>
     </head>
-    <body>
-        <ToggleTheme client:only="vue" />
+    <body class="flex flex-col min-h-screen overflow-hidden">
+        <header class="w-full flex flex-row items-center justify-right   gap-2 px-4 py-2">
+            <div class="flex flex-row items-center gap-2">
+                <ToggleTheme client:only="vue" />
+            </div>
+        </header>
         <slot />
     </body>
 </html>
+    
+
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+* {
+  font-family: 'Inter', sans-serif;
+}
+</style>

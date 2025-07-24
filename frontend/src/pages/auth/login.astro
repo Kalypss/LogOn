@@ -1,29 +1,12 @@
 ---
 import '../../styles/global.css';
-import LoginForm from '@/components/LoginForm.vue';
+import LoginForm from '@/components/auth/LoginForm.vue';
 import { ChevronLeft } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+import Auth from 'src/layouts/auth.astro';
 --- 
-
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Logon - Login</title>
-	</head>
-
-	<body>
-		<Button class="absolute top-4 left-4 z-50 text-center flex items-center justify-center">
-			<a href="/" class="flex items-center gap-2 w-full">
-				<ChevronLeft class="inline-block align-middle" />
-				Menu
-			</a>
-		</Button>
-		
+<Auth content={{ title: 'Logon - Login' }}>
 		<div class="grid place-items-center h-screen content-center">
 			<LoginForm client:only="vue" />
 		</div>
-	</body>
-</html>
+</Auth>

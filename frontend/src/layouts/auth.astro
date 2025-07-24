@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
-import ToggleTheme from '@/components/ui/ToggleTheme.vue';
-import BugReportComponent from '@/components/BugReportComponent.vue';
+import ToggleTheme from '@/components/main/ToggleTheme.vue';
+import BugReportComponent from '@/components/main/BugReportComponent.vue';
 import { Button } from '@/components/ui/button';
 import { ArrowLeftToLine } from 'lucide-vue-next';
 
@@ -33,3 +33,10 @@ const { content } = Astro.props;
 </html>
 
 
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+* {
+  font-family: 'Inter', sans-serif;
+}
+</style>
