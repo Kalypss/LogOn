@@ -3,28 +3,7 @@
 
 services:
   # Frontend Nuxt.js
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: ${NODE_ENV:-development}
-    container_name: logon-frontend
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-http://localhost:3001/api}
-      - NUXT_PUBLIC_APP_NAME=${NUXT_PUBLIC_APP_NAME:-LogOn}
-    networks:
-      - frontend-network
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app:delegated
-      - /app/node_modules
-      - /app/.nuxt
-    command: npm run dev
+
 
   # Backend Node.js/Express
   backend:
