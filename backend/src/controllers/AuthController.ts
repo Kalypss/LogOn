@@ -961,4 +961,78 @@ export class AuthController {
       throw error;
     }
   }
+
+  static async initiateRecovery(req: Request, res: Response): Promise<void> {
+    const { email } = req.body;
+    if (!email) {
+      throw new ValidationError("Email is required.");
+    }
+
+    const result = await AuthController.queryWithRetry(
+      "SELECT id FROM users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+
+    if (result.rows.length > 0) {
+      const userId = result.rows[0].id;
+      const token = require('crypto').randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 3600000); // 1 hour from now
+
+      await AuthController.queryWithRetry(
+        "UPDATE users SET recovery_token = $1, recovery_token_expires_at = $2 WHERE id = $3",
+        [token, expires, userId]
+      );
+
+      // In a real application, you would send an email here.
+      // For this example, we'll log the token to the console.
+      console.log(`Password recovery token for ${email}: ${token}`);
+    }
+
+    res.json({ success: true, message: "If an account with that email exists, a recovery link has been sent." });
+  }
+
+  static async completeRecovery(req: Request, res: Response): Promise<void> {
+    const { token, recoveryCode, newPassword } = req.body;
+    if (!token || !recoveryCode || !newPassword) {
+      throw new ValidationError("Token, recovery code, and new password are required.");
+    }
+
+    const result = await AuthController.queryWithRetry(
+      "SELECT id, recovery_code_hash, recovery_code_salt, recovery_token_expires_at FROM users WHERE recovery_token = $1",
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      throw new AuthError("Invalid or expired recovery token.");
+    }
+
+    const user = result.rows[0];
+
+    if (new Date(user.recovery_token_expires_at) < new Date()) {
+      throw new AuthError("Invalid or expired recovery token.");
+    }
+
+    const recoveryCodeSaltBuffer = user.recovery_code_salt;
+    const recoveryCodeHash = user.recovery_code_hash;
+
+    // The frontend should send the derived key, not the raw password.
+    // This is a placeholder for the actual implementation.
+    const derivedRecoveryCodeHash = await new Promise(resolve => setTimeout(() => resolve(require('crypto').createHash('sha256').update(recoveryCode).digest('hex')), 100));
+
+    if (derivedRecoveryCodeHash !== recoveryCodeHash) {
+        throw new AuthError("Invalid recovery code.");
+    }
+
+    const newSalt = require('crypto').randomBytes(16);
+    // The frontend should send the derived key, not the raw password.
+    // This is a placeholder for the actual implementation.
+    const newAuthHash = await new Promise(resolve => setTimeout(() => resolve(require('crypto').createHash('sha256').update(newPassword).digest('hex')), 100));
+
+    await AuthController.queryWithRetry(
+      "UPDATE users SET auth_hash = $1, salt = $2, recovery_token = NULL, recovery_token_expires_at = NULL WHERE id = $3",
+      [newAuthHash, newSalt, user.id]
+    );
+
+    res.json({ success: true, message: "Password has been reset successfully." });
+  }
 }

@@ -87,6 +87,24 @@ router.post('/logout',
 );
 
 /**
+ * POST /api/auth/recover/initiate
+ * Initiate password recovery
+ */
+router.post('/recover/initiate', 
+  rateLimit(rateLimitConfig.auth), 
+  asyncHandler(AuthController.initiateRecovery)
+);
+
+/**
+ * POST /api/auth/recover/complete
+ * Complete password recovery
+ */
+router.post('/recover/complete', 
+  rateLimit(rateLimitConfig.auth), 
+  asyncHandler(AuthController.completeRecovery)
+);
+
+/**
  * GET /api/auth/verify
  * Vérification de la validité d'une session
  */
